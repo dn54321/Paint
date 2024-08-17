@@ -1,0 +1,1 @@
+export {default as ToolsSideMenu} from './tools-side-menu.component';
