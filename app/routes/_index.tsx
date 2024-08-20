@@ -1,15 +1,15 @@
 import type { MetaFunction } from "@remix-run/node";
 import { Navbar } from "@src/components/layout/navbar";
 import { useState } from "react";
-import { ToolsSideMenu } from "../../src/components/layout/tools-side-menu";
-import { useCamera } from "../../src/features/camera/hooks/use-camera";
-import { CreateCanvasDialog } from "../../src/features/canvas/components/dialog/create-canvas-dialog/create-canvas-dialog.component";
-import { LoadCanvasDialog } from "../../src/features/canvas/components/dialog/load-canvas-dialog/load-canvas-dialog";
-import { CanvasFile, Filebar } from "../../src/features/canvas/components/ui/file-bar/file-bar.component";
-import { Canvas } from "../../src/features/canvas/entities/canvas.entity";
-import { useCanvas } from "../../src/features/canvas/hooks/use-canvas.hook";
-import Toolbar from "../../src/components/layout/toolbar/toolbar.component";
 import { LayerSideMenu } from "../../src/components/layout/layer-side-menu";
+import Toolbar from "../../src/components/layout/toolbar/toolbar.component";
+import { ToolsSideMenu } from "../../src/components/layout/tools-side-menu";
+import { Scene } from "../../src/features/camera/entities/scene.entity";
+import { useScene } from "../../src/features/camera/hooks/use-scene.hook";
+import { CreateSceneDialog } from "../../src/features/surface/components/dialog/create-scene-dialog/create-scene-dialog.component";
+import { Filebar, SurfaceFile } from "../../src/features/surface/components/ui/file-bar/file-bar.component";
+import { LoadSceneDialog } from "../../src/features/surface/components/dialog/load-canvas-dialog/load-canvas-dialog";
+import { useDisplay } from "../../src/features/camera/hooks/use-display.hook";
 
 export const meta: MetaFunction = () => {
   return [
@@ -20,13 +20,14 @@ export const meta: MetaFunction = () => {
 
 
 export default function Index() {
-  const {activeCanvas, removeCanvas, setActiveCanvas, canvasList, moveCanvas} = useCanvas();
-  const {Display, camera, cameraControls} = useCamera();
-  const files = canvasList.map(canvas => ({name: canvas.getName(), key: canvas.getId()}));
-  const [isLoadCanvasDialogOpen, setLoadCanvasDialogOpen] = useState(false);
-  const canvasFileSet = canvasList.reduce<Record<string, Canvas>>(
-      (hashmap, canvas) => Object.assign(hashmap, {[canvas.getId()]: canvas}), 
-  {});
+  const {activeScene, removeScene, setActiveScene, sceneList, moveScene} = useScene();
+  const {Display, camera, cameraControls} = useDisplay();
+  const files = sceneList.map(scene => ({name: scene.getSurface().getName(), key: scene.getId()}));
+  const [isLoadSceneDialogOpen, setLoadSceneDialogOpen] = useState(false);
+  const sceneFileSet = sceneList
+    .reduce<Record<string, Scene>>(
+      (hashmap, scene) => Object.assign(hashmap, {[scene.getId()]: scene}), 
+    {});
 
   return (
     <div className="flex w-full h-full flex-col">
@@ -38,23 +39,23 @@ export default function Index() {
           <Display/>
           <Filebar 
             files={files} 
-            active={files.find(file => activeCanvas && file.key === activeCanvas.getId())}
-            onMove={(file: CanvasFile, position: number) => {
-              moveCanvas(canvasFileSet[file.key], position);
+            active={files.find(file => activeScene && file.key === activeScene.getId())}
+            onMove={(file: SurfaceFile, position: number) => {
+              moveScene(sceneFileSet[file.key], position);
             }}
-            onClick={(file: CanvasFile) => {
+            onClick={(file: SurfaceFile) => {
               if (file === undefined) {
                 return;
               }
 
-              if (canvasFileSet[file.key].getId() !== activeCanvas?.getId()) {
-                setActiveCanvas(canvasFileSet[file.key]);
+              if (sceneFileSet[file.key].getId() !== activeScene?.getId()) {
+                setActiveScene(sceneFileSet[file.key]);
               }
             }}
-            onClose={(file: CanvasFile) => {
-              removeCanvas(file && canvasFileSet[file.key]);
-              if (file.key === activeCanvas?.getId() && canvasList.length)  {
-                setActiveCanvas(canvasList[canvasList.length-1]);
+            onClose={(file: SurfaceFile) => {
+              removeScene(file && sceneFileSet[file.key]);
+              if (file.key === activeScene?.getId() && sceneList.length)  {
+                setActiveScene(sceneList[sceneList.length-1]);
               }
             }}
           />
@@ -62,8 +63,8 @@ export default function Index() {
         </div>
         <LayerSideMenu/>
       </div>
-      <LoadCanvasDialog/>
-      <CreateCanvasDialog open={isLoadCanvasDialogOpen} onOpenChange={setLoadCanvasDialogOpen}/>
+      <LoadSceneDialog/>
+      <CreateSceneDialog open={isLoadSceneDialogOpen} onOpenChange={setLoadSceneDialogOpen}/>
     </div>
   );
 }
