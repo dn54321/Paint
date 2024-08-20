@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../
 import React, { useEffect, useState } from "react";
 import { Camera } from "../../../features/camera/entities/camera.entity";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select";
-import { CameraControlSubscriber } from "../../../features/camera/services/camera-control-subscriber.service";
+import { CameraControlSubscriber } from "../../../features/camera/services/camera/camera-control-subscriber.service";
 
 export interface ToolbarIconButtonProps {
     tooltip: string

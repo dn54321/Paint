@@ -37,4 +37,16 @@ export class SparseLayer implements Layer, Drawable, Erasable {
         const key = pos.y*this.width+pos.x;
         this.colorGridMap.delete(key);
     }
+
+    getImage() {
+        const arr = new Uint8ClampedArray(this.height*this.width*4);
+        this.colorGridMap.forEach((v,pos) => {
+            const key = pos * 4;
+            arr[key] = v.r;
+            arr[key+1] = v.g;
+            arr[key+2] = v.b;
+            arr[key+3] = v.a ?? 255;
+        });
+        return arr;
+    }
 }

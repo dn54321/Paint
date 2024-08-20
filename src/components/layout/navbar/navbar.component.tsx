@@ -14,7 +14,7 @@ import {
     MenubarTrigger,
 } from "@components/ui/menubar";
 import React, { useState } from "react";
-import { CreateCanvasDialog } from "../../../features/canvas/components/dialog/create-canvas-dialog/create-canvas-dialog.component";
+import { CreateSceneDialog } from "../../../features/surface/components/dialog/create-scene-dialog/create-scene-dialog.component";
 
 export default function Navbar() {
     const [isCreateCanvasDialogOpen, setCreateCanvasDialogOpen] = useState(false);
@@ -114,7 +114,7 @@ export default function Navbar() {
                 </div>
             </div>
             </Menubar>
-            <CreateCanvasDialog open={isCreateCanvasDialogOpen} onOpenChange={setCreateCanvasDialogOpen}/>
+            <CreateSceneDialog open={isCreateCanvasDialogOpen} onOpenChange={setCreateCanvasDialogOpen}/>
         </React.Fragment>
 
     )

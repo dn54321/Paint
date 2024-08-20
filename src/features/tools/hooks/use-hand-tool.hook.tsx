@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { ToolHookResponse, Tools } from "../types/tool.types";
-import { CameraActionPayload, CameraActions } from "../../camera/types/camera-action-subscriber.types";
+import { CameraActionPayload, CameraActions } from "../../camera/types/camera-action.types";
 import { Hand } from "lucide-react";
 import { clearSelection } from "../../../utils/selection";
 import { MouseButtons } from "../../../types/mouse.types";
@@ -42,6 +42,7 @@ export function useHandTool(): ToolHookResponse {
         if (!isMouseDown.current) {
             return;
         }
+        console.log("Grabbing...");
         const dy = event.movementY;
         const dx = event.movementX;
         camera.moveCamera(-dy, -dx);

@@ -1,6 +1,6 @@
 import { Camera, Paintbrush } from "lucide-react";
 import { MouseButtons } from "../../../types/mouse.types";
-import { CameraActionPayload, CameraActions } from "../../camera/types/camera-action-subscriber.types";
+import { CameraActionPayload, CameraActions } from "../../camera/types/camera-action.types";
 import { ToolHookResponse, Tools } from "../types/tool.types";
 import { ToolFormComponent, ToolFormComponents } from "../types/tool-forms.types";
 import { useRef } from "react";

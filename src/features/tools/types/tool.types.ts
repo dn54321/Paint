@@ -1,5 +1,5 @@
 import React from "react";
-import { CameraActionPayload, CameraActions } from "../../camera/types/camera-action-subscriber.types";
+import { CameraActionPayload, CameraActions } from "../../camera/types/camera-action.types";
 import { ToolFormComponent } from "./tool-forms.types";
 
 export interface ToolAction {

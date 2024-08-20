@@ -1,34 +1,22 @@
 import { RefObject } from "react";
 import { Dimension, Position } from "../../../types/geometry.types";
-import { Canvas } from "../../canvas/entities/canvas.entity";
 import { SingleColorLayer } from "../../layer/entity/layers/single-color-layer.entity";
 import { boundBetween } from "../../../utils/math";
-
-export interface Scene {
-    canvas: Canvas;
-    zoom: number;
-    rotation: number;
-    scrollPositions: Position;
-    paddingX: number;
-    paddingY: number;
-    baseWidth: number;
-    baseHeight: number;
-}
+import { Scene } from "./scene.entity";
+import { fitBoundingBox } from "../utils/camera.utils";
 
 export class Camera {
     private display?: RefObject<HTMLCanvasElement>;
     private scroll?: RefObject<HTMLDivElement>;
-    private initialDisplayWidth: number;
-    private initialDisplayHeight: number;
+    private displayDimensions: Dimension;
     private scenes: Map<string, Scene>;
-    private activeCanvasId?: string;
+    private activeSceneId?: string;
 
     constructor() {
-        this.initialDisplayWidth = 0;
-        this.initialDisplayHeight = 0;
+        this.displayDimensions = {width: 0, height: 0};
         this.display = undefined;
         this.scroll = undefined;
-        this.activeCanvasId = undefined;
+        this.activeSceneId = undefined;
         this.scenes = new Map<string, Scene>();
     }
 
@@ -37,7 +25,7 @@ export class Camera {
         const scene = this.getActiveScene();
         
         if (!scroll) {
-            throw new Error("Canvas scroll element is invalid or undefined.")
+            throw new Error("Canvas scroll element is invalid or undefined.");
         }
 
         if (!scene) { 
@@ -46,7 +34,17 @@ export class Camera {
 
         scroll.scrollLeft = (scroll.scrollWidth - scroll.clientWidth ) / 2;
         scroll.scrollTop = (scroll.scrollHeight - scroll.clientHeight ) / 2;
-        scene.scrollPositions = {x: scroll.scrollLeft, y: scroll.scrollTop};
+        scene.setScrollPositionPercentage({x: scroll.scrollLeft, y: scroll.scrollTop});
+    }
+
+    getBaseBoardDimensions() {
+        const scene = this.getActiveScene();
+        if (!scene) {
+            throw new Error("No scene is active");
+        }
+        const surfaceDimensions = scene.getSurface().getDimensions();
+        const boardDimensions = fitBoundingBox(surfaceDimensions, this.displayDimensions)
+        return boardDimensions;  
     }
 
     rotateCamera(radians: number): void {
@@ -54,15 +52,16 @@ export class Camera {
         if (!scene) { 
             throw new Error("No scene is active");
         }
-        scene.rotation += radians;
+        const rotation = scene.getRotation();
+        scene.setRotation(rotation + radians);
     }
 
     getActiveScene() {
-        if (this.activeCanvasId === undefined) {
+        if (this.activeSceneId === undefined) {
             return undefined;
         }
 
-        return this.scenes.get(this.activeCanvasId);
+        return this.scenes.get(this.activeSceneId);
     }
 
     moveCamera(yOffset: number, xOffset: number): void {
@@ -78,26 +77,28 @@ export class Camera {
 
         const maxWidthScroll = scroll.scrollWidth - scroll.clientWidth;
         const maxHeightScroll = scroll.scrollHeight - scroll.clientHeight;
-        const newScrollX = boundBetween(scene.scrollPositions.x + xOffset, 0, maxWidthScroll);
-        const newScrollY = boundBetween(scene.scrollPositions.y + yOffset, 0, maxHeightScroll);
-        scene.scrollPositions = {x: newScrollX, y: newScrollY};
+        const newScrollX = boundBetween(scroll.scrollLeft + xOffset, 0, maxWidthScroll);
+        const newScrollY = boundBetween(scroll.scrollTop + yOffset, 0, maxHeightScroll);
+        scene.setScrollPositionPercentage({x: newScrollX/maxWidthScroll, y: newScrollY/maxHeightScroll});
         scroll.scrollTop = newScrollY;
         scroll.scrollLeft = newScrollX;
-
     }
 
-    getCanvasPosition(displayPos: Position) {
+    getScenePosition(displayPos: Position) {
         const scene = this.getActiveScene();
         if (!scene) {
             throw new Error("No scene is active");
         }
-        const canvasDimensions = scene.canvas.getDimensions();
-        const boardWidth = scene.baseWidth*scene.zoom;
-        const boardHeight = scene.baseHeight*scene.zoom;
-        const displayPosX = boundBetween(displayPos.x-scene.paddingX, 0, boardWidth);
-        const displayPosY = boundBetween(displayPos.x-scene.paddingX, 0, boardHeight);
-        const canvasPosX = displayPosX/boardWidth*canvasDimensions.width;
-        const canvasPosY = displayPosY/boardHeight*canvasDimensions.height;
+        const surfaceDimensions = scene.getSurface().getDimensions();
+        const boardDimensions = this.getBaseBoardDimensions();
+        const sceneZoom = scene.getZoom();
+        const scenePadding = scene.getPaddingDimensions();
+        const boardWidth = boardDimensions.width*sceneZoom;
+        const boardHeight = boardDimensions.height*sceneZoom;
+        const displayPosX = boundBetween(displayPos.x-scenePadding.width, 0, boardWidth);
+        const displayPosY = boundBetween(displayPos.y-scenePadding.height, 0, boardHeight);
+        const canvasPosX = displayPosX/boardWidth*surfaceDimensions.width;
+        const canvasPosY = displayPosY/boardHeight*surfaceDimensions.height;
         return {x: canvasPosX, y: canvasPosY}
     }
 
@@ -107,7 +108,7 @@ export class Camera {
             throw new Error("No scene is active");
         }
 
-        scene.zoom = zoom;
+        scene.setZoom(zoom);
         this.zoomCamera(0, displayPos);
     }
 
@@ -136,41 +137,47 @@ export class Camera {
             throw new Error("Canvas scroll element is invalid or undefined.")
         }
 
-        const scrollWidthPercentage = scene.scrollPositions.x/((scroll.scrollWidth - scroll.clientWidth) || 1);
-        const scrollHeightPercentage = scene.scrollPositions.y/((scroll.scrollHeight - scroll.clientHeight) || 1);
-        const canvasPixelPercentageX = (Number(displayPos?.x) - scene.paddingX) / (scene.baseWidth * scene.zoom);
-        const canvasPixelPercentageY = (Number(displayPos?.y) - scene.paddingY) / (scene.baseHeight * scene.zoom);
+        const sceneScrollPosition = scene.getScrollPositionPercentage();
+        const scenePadding = scene.getPaddingDimensions();
+        const sceneZoom = scene.getZoom();
+
+        const boardDimensions = this.getBaseBoardDimensions();
+        const zoomedBoardDimension = {width: boardDimensions.width*sceneZoom, height: boardDimensions.height*sceneZoom};
+
+        const scrollWidthPercentage = sceneScrollPosition.x;
+        const scrollHeightPercentage = sceneScrollPosition.y;
+        const canvasPixelPercentageX = (Number(displayPos?.x) - scenePadding.width) / (zoomedBoardDimension.width);
+        const canvasPixelPercentageY = (Number(displayPos?.y) - scenePadding.height) / (zoomedBoardDimension.height);
         const viewportPixelDistanceX = Number(displayPos?.x) - scroll.scrollLeft;
         const viewportPixelDistanceY = Number(displayPos?.y) - scroll.scrollTop;
 
-        const displayPaddingX = scene.paddingX;
-        const displayPaddingY = scene.paddingY;
-
-        const newZoomOffset = scene.zoom + zoomOffset;
-        const newZoomedWidth = scene.baseWidth*newZoomOffset;
-        const newZoomedHeight = scene.baseHeight*newZoomOffset;
+        const newZoomOffset = sceneZoom + zoomOffset;
+        const newZoomedWidth = boardDimensions.width*newZoomOffset;
+        const newZoomedHeight = boardDimensions.height*newZoomOffset;
 
         if (newZoomOffset <= 0) {
             throw new Error("Zoom cannot be below or equal to 0.");
         }
 
-        scene.zoom = newZoomOffset;
-        display.width = newZoomedWidth + 2*displayPaddingX;
-        display.height = newZoomedHeight + 2*displayPaddingY;
-        display.style.width = `${newZoomedWidth + 2*displayPaddingX}px`;
-        display.style.height = `${newZoomedHeight + 2*displayPaddingY}px`;
+        scene.setZoom(newZoomOffset);
+        display.width = newZoomedWidth + 2*scenePadding.width;
+        display.height = newZoomedHeight + 2*scenePadding.height;
+        display.style.width = `${newZoomedWidth + 2*scenePadding.width}px`;
+        display.style.height = `${newZoomedHeight + 2*scenePadding.height}px`;
         this.draw();
         
         if (displayPos) {
-            scroll.scrollLeft = displayPaddingX + canvasPixelPercentageX*scene.baseWidth*scene.zoom - viewportPixelDistanceX;
-            scroll.scrollTop =  displayPaddingY + canvasPixelPercentageY*scene.baseHeight*scene.zoom - viewportPixelDistanceY;
+            scroll.scrollLeft = scenePadding.width + canvasPixelPercentageX*boardDimensions.width*sceneZoom - viewportPixelDistanceX;
+            scroll.scrollTop =  scenePadding.height + canvasPixelPercentageY*boardDimensions.height*sceneZoom - viewportPixelDistanceY;
         }
         else {
             scroll.scrollLeft = (scroll.scrollWidth - scroll.clientWidth) * scrollWidthPercentage;
             scroll.scrollTop = (scroll.scrollHeight - scroll.clientHeight) * scrollHeightPercentage;
         }
 
-        scene.scrollPositions = {x: scroll.scrollLeft, y: scroll.scrollTop};
+        const maxWidthScroll = scroll.scrollWidth - scroll.clientWidth;
+        const maxHeightScroll = scroll.scrollHeight - scroll.clientHeight;
+        scene.setScrollPositionPercentage({x: scroll.scrollLeft/maxWidthScroll, y: scroll.scrollTop/maxHeightScroll});
     }
 
     getZoom() {
@@ -178,7 +185,7 @@ export class Camera {
         if (!scene) { 
             throw new Error("No scene is active");
         }
-        return scene.zoom;
+        return scene.getZoom();
     }
 
     isReady() {
@@ -196,20 +203,16 @@ export class Camera {
             throw new Error("Canvas scroll element is invalid or undefined.")
         }
 
-        if (scene.scrollPositions.x === -1 && scene.scrollPositions.y === -1) {
-            scene.scrollPositions = {
-                x: (scroll.scrollWidth - scroll.clientWidth)/2, 
-                y: (scroll.scrollHeight - scroll.clientHeight)/2
-            };
-        }
-
-        scroll.scrollLeft = scene.scrollPositions.x;
-        scroll.scrollTop = scene.scrollPositions.y;
+        const maxWidthScroll = scroll.scrollWidth - scroll.clientWidth;
+        const maxHeightScroll = scroll.scrollHeight - scroll.clientHeight;
+        const scrollPos = scene.getScrollPositionPercentage();
+        scroll.scrollLeft = scrollPos.x*maxWidthScroll;
+        scroll.scrollTop = scrollPos.y*maxHeightScroll;
     }
 
     rescaleCamera() {
         const scene = this.getActiveScene();
-        if (!scene || !this.activeCanvasId) { 
+        if (!scene || !this.activeSceneId) { 
             throw new Error("No scene is active");
         }
         if (!this.display?.current) {
@@ -217,81 +220,43 @@ export class Camera {
         }
 
         const display = this.display.current;
-        const baseDimensions = this.convertCanvasToScene(scene.canvas);
-        const newScene = {
-            ...scene,
-            paddingX: baseDimensions.paddingX,
-            paddingY: baseDimensions.paddingY,
-            baseWidth: baseDimensions.baseWidth,
-            baseHeight: baseDimensions.baseHeight,
+        const dimensions = this.getBaseBoardDimensions();
+        const sceneZoom = scene.getZoom();
+        const newPadding = {
+            width: this.displayDimensions.width * 0.66, 
+            height: this.displayDimensions.height * 0.66
         }
 
-        this.scenes.set(this.activeCanvasId, newScene);
-        display.width = newScene.baseWidth*newScene.zoom + 2*newScene.paddingX;
-        display.height = newScene.baseHeight*newScene.zoom  + 2*newScene.paddingY;
+        scene.setPaddingDimensions(newPadding);
+        display.width = dimensions.width*sceneZoom + 2*newPadding.width;
+        display.height = dimensions.height*sceneZoom  + 2*newPadding.height;
         display.style.width = `${display.width}px`;
         display.style.height = `${display.height}px`;
     }
 
-    convertCanvasToScene(canvas: Canvas) {
-        const displayWidth = this.initialDisplayWidth;
-        const displayHeight = this.initialDisplayHeight;
-        const canvasDims = canvas.getDimensions();
-        const horizontalScale = canvasDims.width/displayWidth;
-        const verticalScale = canvasDims.height/displayHeight;
-        let dimensions: Dimension;
 
-        if (horizontalScale > verticalScale) {
-            const width = displayWidth;
-            const height = displayWidth * canvasDims.height/canvasDims.width;
-            dimensions = {width: width, height: height};
-        }
-        else {
-            const height = displayHeight;
-            const width =  displayHeight * canvasDims.width/canvasDims.height;
-            dimensions = {width: width, height: height};
-        }
-
-        return {
-            canvas,
-            zoom: 0.95,
-            rotation: 0,
-            scrollPositions: {x: -1, y: -1},
-            paddingX: displayWidth * 0.66,
-            paddingY: displayHeight * 0.66,
-            baseWidth: dimensions.width,
-            baseHeight: dimensions.height,
-            scenes: []
-        }
+    addScene(scene: Scene) {
+        this.scenes.set(scene.getId(), scene);
     }
 
-    addCanvas(canvas: Canvas) {
-        const scene = this.convertCanvasToScene(canvas);
-        this.scenes.set(canvas.getId(), scene);
+    removeScene(scene: Scene) {
+        this.scenes.delete(scene.getId());
     }
 
-    getActiveCanvas() {
-        return this.getActiveScene()?.canvas;
+    getSceneList() {
+        return Array.from(this.scenes.values()).map(scene => scene);
     }
 
-    removeCanvas(canvas: Canvas) {
-        this.scenes.delete(canvas.getId());
-    }
-
-    getCanvasList() {
-        return Array.from(this.scenes.values()).map(scene => scene.canvas);
-    }
-
-    setCanvas(canvas?: Canvas) {
+    setScene(scene?: Scene) {
         const display = this.display?.current;
         const scroll = this.scroll?.current;
-        if (canvas && !this.scenes.has(canvas.getId())) {
+        if (scene && !this.scenes.has(scene.getId())) {
             console.error(`
                 Invalid canvas. 
-                Tried to set canvas '${canvas.getId()}' but it doesn't exist. 
+                Tried to set canvas '${scene.getId()}' but it doesn't exist. 
                 Setting active canvas to undefined.
             `);
-            this.setCanvas(undefined);
+            this.setScene(undefined);
             return;
         }
 
@@ -303,13 +268,13 @@ export class Camera {
             throw new Error("Canvas scroll element is invalid or undefined.")
         }
 
-        if (!canvas) {
-            this.activeCanvasId = undefined;
+        if (!scene) {
+            this.activeSceneId = undefined;
             return;
         }   
 
 
-        this.activeCanvasId = canvas?.getId();
+        this.activeSceneId = scene?.getId();
         this.rescaleCamera();
         this.adjustCameraScroll();
         this.draw();  
@@ -323,15 +288,19 @@ export class Camera {
         }
 
         const currentScene = this.getActiveScene();   
-        if (currentScene) {
-            currentScene.scrollPositions = {x: scroll.scrollLeft, y: scroll.scrollTop};
-            console.log(
-                `Recording scroll position for '${currentScene.canvas.getName()}'. ` + 
-                `Recorded: ${JSON.stringify(currentScene.scrollPositions)}.`
-            );
-            console.log();
-        }  
-        
+        if (!currentScene) {
+            throw new Error("Cannot update state. No scene is active.");
+        }
+        const maxWidthScroll = scroll.scrollWidth - scroll.clientWidth;
+        const maxHeightScroll = scroll.scrollHeight - scroll.clientHeight;
+        currentScene.setScrollPositionPercentage({
+            x: scroll.scrollLeft/maxWidthScroll, 
+            y: scroll.scrollTop/maxHeightScroll
+        });
+        console.log(
+            `Recording scroll position for '${currentScene.getSurface().getName()}'. ` + 
+            `Recorded: ${JSON.stringify(currentScene.getScrollPositionPercentage())}.`
+        );
     }
 
     setDisplayRef(displayRef: RefObject<HTMLCanvasElement>) {
@@ -344,8 +313,10 @@ export class Camera {
         displayRef.current.removeAttribute('height');
         displayRef.current.style.width = "100%";
         displayRef.current.style.height = "100%";
-        this.initialDisplayWidth = displayRef.current.scrollWidth;
-        this.initialDisplayHeight = displayRef.current.scrollHeight;
+        this.displayDimensions = {
+            width: displayRef.current.scrollWidth, 
+            height: displayRef.current.scrollHeight,
+        }
     }
 
     setScrollRef(scrollRef: RefObject<HTMLDivElement>) {
@@ -359,7 +330,6 @@ export class Camera {
     draw() {
         const scene = this.getActiveScene();
 
-        
         if (!this.display?.current) {
             throw new Error("Canvas element is invalid or undefined.")
         }
@@ -379,10 +349,13 @@ export class Camera {
             return;
         }
 
-        const boardWidth =  scene.baseWidth*scene.zoom;
-        const boardHeight = scene.baseHeight*scene.zoom;
-        const displayPaddingWidth = scene.paddingX;
-        const displayPaddingHeight = scene.paddingY;
+        const boardDimensions = this.getBaseBoardDimensions();
+        const sceneZoom = scene.getZoom();
+        const scenePadding = scene.getPaddingDimensions();
+        const boardWidth =  boardDimensions.width*sceneZoom;
+        const boardHeight = boardDimensions.height*sceneZoom;
+        const displayPaddingWidth = scenePadding.width;
+        const displayPaddingHeight = scenePadding.height;
 
         // draw background
         ctx.fillStyle = "#363737";
@@ -391,7 +364,7 @@ export class Camera {
         const time = Date.now();
 
         // draw layers
-        const layers = scene.canvas.getLayers();
+        const layers = scene.getSurface().getLayers();
         for (const layer of layers) {
             if (layer instanceof SingleColorLayer) {
                 ctx.fillStyle = "white";
@@ -416,7 +389,7 @@ export class Camera {
             // }
         }
         const duration = Date.now() - time;
-        console.log(`zoom: ${scene.zoom}`);
+        console.log(`zoom: ${scene.getZoom()}`);
         console.log(`Paint Duration: ${duration}`);
     }
 }

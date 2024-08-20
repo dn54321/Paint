@@ -13,22 +13,43 @@ import { Layer } from "../../types/layer.types";
  */
 
 export class DenseLayer implements Layer, Drawable, Erasable {
-    private colorGrid: Array<Array<Color | undefined>>
-    
+    // private colorGrid: Array<Array<Color | undefined>>;
+    private colorGrid: Uint8ClampedArray;
+    private width: number;
+    private height: number;
     constructor(height: number, width: number) {
-        this.colorGrid = Array(height).fill(Array(width));
+        this.colorGrid = new Uint8ClampedArray(height*width*4);
+        this.height = height;
+        this.width = width;
     }
 
     draw(pos: Position, color: Color): void {
-        this.colorGrid[pos.y][pos.x] = color;
+        const index = pos.y*this.width*4 + pos.x;
+        this.colorGrid[index] = color.r;
+        this.colorGrid[index + 1] = color.g;
+        this.colorGrid[index + 2] = color.b;
+        this.colorGrid[index + 3] = color.a ?? 255;
     }
 
     peek(pos: Position): Color {
-        const color = this.colorGrid[pos.y][pos.x];
-        return color ?? {r: 0, g: 0, b: 0, a: 0};
+        const index = (pos.y * this.width + pos.x) * 4;
+        return {
+            r: this.colorGrid[index], 
+            g: this.colorGrid[index+1], 
+            b: this.colorGrid[index+2], 
+            a: this.colorGrid[index+3]
+        };
+    }
+
+    getImage() {
+        return this.colorGrid;
     }
 
     erase(pos: Position): void {
-        this.colorGrid[pos.y][pos.x] = undefined;
+        const index = (pos.y * this.width + pos.x) * 4;
+        this.colorGrid[index] = 0;
+        this.colorGrid[index + 1] = 0;
+        this.colorGrid[index + 2] = 0;
+        this.colorGrid[index + 3] = 0;
     }
 }

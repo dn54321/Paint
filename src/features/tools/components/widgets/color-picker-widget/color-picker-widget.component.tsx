@@ -1,11 +1,9 @@
-import { useState } from "react";
-import { ToolWidget } from "../../container/tool-widget/tool-widget.component";
 import { hsvaToHex } from '@uiw/color-convert';
-import Wheel from '@uiw/react-color-wheel'
 import { Palette } from "lucide-react";
-import ShadeSlider from '@uiw/react-color-shade-slider';
+import { useState } from "react";
 import { ToggleGroup, ToggleGroupItem } from "../../../../../components/ui/toggle-group";
 import { CircleColorWheel } from "../../../../color/components/ui/circle-color-wheel/circle-color-wheel.component";
+import { ToolWidget } from "../../container/tool-widget/tool-widget.component";
 
 export function ColorPickerWidget() {
     const [colorState, setColorState] = useState(0);
@@ -35,32 +33,9 @@ export function ColorPickerWidget() {
                         className="w-12 h-4 border data-[state=on]:border-foreground rounded-sm"
                     />
                 </ToggleGroup>
-                {/* <Wheel
-                    color={{...colorPalette[colorState], a:1}}
-                    className={"rounded-full"}
-                    onChange={(color) => {
-                        setColorPalette((prevColorPalette) => {
-                            const newColorPalette = [...prevColorPalette];
-                            newColorPalette[colorState] = color.hsva;
-                            return newColorPalette;
-                        });
-                    }}
-                /> */}
+
                 <CircleColorWheel/>
-                <div className="flex flex-col w-full px-5 my-2 gap-1 items-center">
-                    <ShadeSlider
-                        radius="9px"
-                        hsva={colorPalette[colorState]}
-                        className="w-full"
-                        onChange={(newShade) => {
-                            setColorPalette((prevColorPalette) => {
-                                const newColorPalette = [...prevColorPalette];
-                                newColorPalette[colorState] = {...newColorPalette[colorState], ...newShade};
-                                return newColorPalette;
-                            });
-                        }}
-                    />
-                </div>
+
             </div>
         </ToolWidget>
     )

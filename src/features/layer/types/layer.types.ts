@@ -9,4 +9,5 @@ export enum Layers {
 
 export interface Layer {
     peek(pos: Position): Color
+    getImage(): Uint8ClampedArray
 }
