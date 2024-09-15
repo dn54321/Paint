@@ -39,7 +39,7 @@ export interface ToolHandState extends GenericToolState {
 
 export interface ToolBrushState extends GenericToolState {
     activeTool: Tools.BRUSH;
-    handState: SubtoolSliceState<BrushSubtool, ToolBrushSettings>;
+    brushState: SubtoolSliceState<BrushSubtool, ToolBrushSettings>;
 }
 
 export interface GenericToolState {

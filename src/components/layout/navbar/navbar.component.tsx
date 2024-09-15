@@ -14,9 +14,19 @@ import {
     MenubarTrigger,
 } from "@components/ui/menubar";
 import React, { useState } from "react";
-import { CreateSceneDialog } from "../../../features/surface/components/dialog/create-scene-dialog/create-scene-dialog.component";
+import { CreateSceneDialog } from "../../../features/surface/components/dialog/create-surface-dialog/create-surface-dialog.component";
+import { Dimension } from "../../../types/geometry.types";
 
-export default function Navbar() {
+
+export interface SceneSettings {
+    scaleZoomDimension?: Dimension,
+}
+
+export interface NavbarProps {
+    surfaceCreationSettings?: Partial<SceneSettings>
+}
+
+export default function Navbar(props: NavbarProps) {
     const [isCreateCanvasDialogOpen, setCreateCanvasDialogOpen] = useState(false);
     return (
         <React.Fragment>
@@ -29,15 +39,15 @@ export default function Navbar() {
                         <MenubarTrigger>File</MenubarTrigger>
                         <MenubarContent className="w-64">
                             <MenubarItem onClick={() => setCreateCanvasDialogOpen(true)}>
-                                New Canvas 
+                                New surface 
                                 <MenubarShortcut>Ctrl+N</MenubarShortcut>
                             </MenubarItem>
                             <MenubarItem>
-                            Import Canvas <MenubarShortcut>Ctrl+Alt+N</MenubarShortcut>
+                            Import surface <MenubarShortcut>Ctrl+Alt+N</MenubarShortcut>
                             </MenubarItem>
                             <MenubarSeparator />
                             <MenubarSub>
-                            <MenubarSubTrigger>Export Canvas</MenubarSubTrigger>
+                            <MenubarSubTrigger>Export surface</MenubarSubTrigger>
                             <MenubarSubContent>
                                 <MenubarItem>Portable Network Graphics (.png)</MenubarItem>
                                 <MenubarItem>Joint Photographic Experts Group (.jpeg)</MenubarItem>
@@ -114,7 +124,11 @@ export default function Navbar() {
                 </div>
             </div>
             </Menubar>
-            <CreateSceneDialog open={isCreateCanvasDialogOpen} onOpenChange={setCreateCanvasDialogOpen}/>
+            <CreateSceneDialog 
+                open={isCreateCanvasDialogOpen} 
+                onOpenChange={setCreateCanvasDialogOpen}
+                scaleZoomDimension={props.surfaceCreationSettings?.scaleZoomDimension}
+            />
         </React.Fragment>
 
     )

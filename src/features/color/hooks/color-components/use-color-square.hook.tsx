@@ -59,7 +59,7 @@ function setColorByMouse(
     if (!canvasRef.current) {
         throw new Error("Canvas ref has not been properly initialised");
     }
-
+    
     const mousePos = {x: mouseEvent.offsetX, y: mouseEvent.offsetY};
     const canvasDims = {width: canvasRef.current.clientWidth, height: canvasRef.current.clientHeight};
     const squareWidth = canvasDims.width*options.length;
@@ -67,7 +67,7 @@ function setColorByMouse(
     const center = {x: canvasDims.width/2, y: canvasDims.height/2};
     const yPercentage = mousePos.y-center.y+halfSquareWidth;
     const xPercentage = mousePos.x-center.x+halfSquareWidth;
-    const value = boundBetween(Math.floor(yPercentage*100/squareWidth),0,100);
+    const value = boundBetween(Math.floor(100-yPercentage*100/squareWidth),0,100);
     const saturation = boundBetween(Math.floor(xPercentage*100/squareWidth),0,100);
     options.setColor({...options.color, s: saturation, v: value});
 }
@@ -89,7 +89,7 @@ function getPointerProps(
     const center = {x: canvasDims.width/2, y: canvasDims.height/2};
     const topLeft = {x: center.x-halfSquareLength, y: center.y-halfSquareLength};
     const x = topLeft.x + squareLength*s/100 - halfRingRadius;
-    const y = topLeft.y + squareLength*v/100 - halfRingRadius;
+    const y = topLeft.y + 100 - squareLength*v/100 - halfRingRadius;
     return {style: {transform: `translateX(${x}px) translateY(${y}px)`}};
 }
 
@@ -121,7 +121,7 @@ function isMouseWithinSquare(
 
 export function useColorSquare(canvasRef: MutableRefObject<HTMLCanvasElement | null>, options?: Partial<ColorSquareOptions>) {
     const [pointerProps, setPointerProps] = useState({});
-
+    const isMouseDown = useRef(false);
     const colorRef = useRef(options?.color ?? {h: 180, s: 0, v: 0});
     const colorSquareOptions = {
         ringRadius: 0.05,
@@ -151,7 +151,12 @@ export function useColorSquare(canvasRef: MutableRefObject<HTMLCanvasElement | n
     
             if (isMouseWithinSquare(event, canvasRef, colorSquareOptions)) {
                 console.log("Detected mouse click in color square. Updating color pointer...");
-                move(event, canvasRef, (e) => setColorByMouse(e, canvasRef, colorSquareOptions));
+                isMouseDown.current = true;
+                setColorByMouse(event, canvasRef, colorSquareOptions);
+                move(event, canvasRef, (e) => {
+                    console.log("Detected mouse move event");
+                    setColorByMouse(e, canvasRef, colorSquareOptions);
+                });
             }
         }
 
@@ -159,8 +164,12 @@ export function useColorSquare(canvasRef: MutableRefObject<HTMLCanvasElement | n
             if (options?.color === colorRef.current) {
                 return;
             }
-            console.log("Persisting color " + JSON.stringify(colorRef.current));
-            options?.setColor && options.setColor(colorRef.current);
+
+            if (isMouseDown.current === true) {
+                isMouseDown.current = false;
+                console.log("Persisting color " + JSON.stringify(colorRef.current));
+                options?.setColor && options.setColor(colorRef.current);
+            }
         }
 
         drawColorSquare(canvasRef, colorSquareOptions);

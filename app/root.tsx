@@ -1,3 +1,6 @@
+"use client";
+import "reflect-metadata";
+
 import {
   Links,
   Meta,
@@ -6,7 +9,8 @@ import {
   ScrollRestoration,
 } from "@remix-run/react";
 import "./tailwind.css";
-import {DndContext} from '@dnd-kit/core';
+import { InversifyContainerContext } from "../src/components/provider/inversify-container/inversify-container-provider.component";
+import { container } from "../src/inversify.container";
 export function links() {
   return [
     { rel: "icon", href: "/drawt-light.ico", media: "(prefers-color-scheme: light)" },
@@ -34,5 +38,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  return (
+    <InversifyContainerContext.Provider value={container}>
+      <Outlet />
+    </InversifyContainerContext.Provider>
+  );
 }

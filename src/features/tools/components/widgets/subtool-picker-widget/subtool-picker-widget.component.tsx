@@ -22,16 +22,16 @@ export function SubtoolPickerWidget({
                 variant="outline" 
                 value={activeSubtool}
                 onValueChange={(value) => value && setActiveSubtool(value)}
-                className="flex flex-row px-2 flex-wrap"
+                className="flex flex-col gap-0"
             >
                 {subtools.map(subtool => (
                     <ToggleGroupItem 
                         value={subtool.key} 
                         key={subtool.key} 
-                        className="flex items-center justify-start bg-background gap-2 flex-grow min-w-fit"
+                        className="w-full m-0 justify-start flex gap-3 border-x-0 not-first:border-t-1 rounded-none"
                     >
                         {subtool.icon}
-                        <small className=".small">{subtool.name}</small>
+                        <small className=".small">Tool: {subtool.name}</small>
                     </ToggleGroupItem>
                 ))}
             </ToggleGroup>

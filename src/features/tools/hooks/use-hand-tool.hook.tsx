@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { ToolHookResponse, Tools } from "../types/tool.types";
-import { CameraActionPayload, CameraActions } from "../../camera/types/camera-action.types";
+import { DisplayActions, MouseDisplayActionPayload } from "../../display/types/camera-action.types";
 import { Hand } from "lucide-react";
 import { clearSelection } from "../../../utils/selection";
 import { MouseButtons } from "../../../types/mouse.types";
@@ -26,48 +26,57 @@ export function useHandTool(): ToolHookResponse {
         isMouseDown.current = true;
     }
 
-    function onMouseClick({event}: CameraActionPayload) {
+    function onMouseClick({event}: MouseDisplayActionPayload) {
         if (event.button === MouseButtons.LEFT_CLICK) {
             onGrabEnable();
         }
     }
 
-    function onGrabDisable({camera}: CameraActionPayload) {
-        camera.updateState();
-        setToolPointer(HandToolPointer.DEFAULT);    
-        isMouseDown.current = false;
-    }
-
-    function onMouseMove({camera, event}: CameraActionPayload) {
-        if (!isMouseDown.current) {
+    function onMouseUp({viewportRef, scene}: MouseDisplayActionPayload) {
+        if (!viewportRef.current) {
             return;
         }
-        console.log("Grabbing...");
+        const maxScrollX = viewportRef.current.scrollWidth - viewportRef.current.clientWidth;
+        const maxScrollY = viewportRef.current.scrollHeight - viewportRef.current.clientHeight;
+        const scrollX = viewportRef.current.scrollLeft/maxScrollX;
+        const scrollY = viewportRef.current.scrollTop/maxScrollY;
+        scene.setScrollPositionPercentage({x: scrollX, y: scrollY});
+        setToolPointer(HandToolPointer.DEFAULT);    
+        isMouseDown.current = false;
+        
+    }
+
+    function onMouseMove({event, viewportRef}: MouseDisplayActionPayload) {
+        if (!isMouseDown.current || !viewportRef.current) {
+            return;
+        }
         const dy = event.movementY;
         const dx = event.movementX;
-        camera.moveCamera(-dy, -dx);
+        
+        viewportRef.current.scrollLeft -= dx;
+        viewportRef.current.scrollTop -= dy;
     }
 
     const actions = [
         {
-            eventName: CameraActions.ON_MOUSE_UP,
+            eventName: DisplayActions.ON_MOUSE_UP,
             actionName: "TOOL.HAND.GRAB",
-            action: onGrabDisable
+            action: onMouseUp
         },
         {
-            eventName: CameraActions.ON_MOUSE_DOWN,
+            eventName: DisplayActions.ON_MOUSE_DOWN,
             actionName: "TOOL.HAND.UNGRAB",
             action: onMouseClick
         },
         {
-            eventName: CameraActions.ON_MOUSE_MOVE,
+            eventName: DisplayActions.ON_MOUSE_MOVE,
             actionName: "TOOL.HAND.MOVE",
             action: onMouseMove
         },
         {
-            eventName: CameraActions.ON_MOUSE_EXIT,
+            eventName: DisplayActions.ON_MOUSE_EXIT,
             actionName: "TOOL.HAND.EXIT_SCREEN",
-            action: onGrabDisable
+            action: onMouseUp
         }
     ];
 

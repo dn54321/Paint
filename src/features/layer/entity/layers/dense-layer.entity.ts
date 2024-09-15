@@ -1,7 +1,11 @@
+
 import { Color } from "../../../../types/color.types";
-import { Position } from "../../../../types/geometry.types";
+import { Dimension, Position } from "../../../../types/geometry.types";
 import { Drawable, Erasable } from "../../../../types/surface.types";
-import { Layer } from "../../types/layer.types";
+import { Persistable } from "../../../../types/writable.types";
+import { DenseLayerJsonData } from "../../types/layer-loader.types";
+import { Layer, Layers } from "../../types/layer.types";
+import { createId } from "@paralleldrive/cuid2";
 
 /**
  * Time Complexity
@@ -12,19 +16,36 @@ import { Layer } from "../../types/layer.types";
  * Space Complexity: O(l*h)
  */
 
-export class DenseLayer implements Layer, Drawable, Erasable {
-    // private colorGrid: Array<Array<Color | undefined>>;
+export interface DenseLayerData {
+    colorGrid: Uint8ClampedArray;
+    id: string;
+}
+
+export class DenseLayer implements Layer, Drawable, Erasable, Persistable<DenseLayerJsonData> {
     private colorGrid: Uint8ClampedArray;
     private width: number;
     private height: number;
-    constructor(height: number, width: number) {
-        this.colorGrid = new Uint8ClampedArray(height*width*4);
-        this.height = height;
-        this.width = width;
+    private id: string;
+    constructor(dimension: Dimension, data?: Partial<DenseLayerData>) {
+        this.height = dimension.height;
+        this.width = dimension.width;
+        this.colorGrid = data?.colorGrid ?? new Uint8ClampedArray(this.height*this.width*4);
+        this.id = data?.id ?? createId();
     }
 
+    toJson(): DenseLayerJsonData {
+        return {
+            width: this.width,
+            height: this.height,
+          //  colorGrid: this.colorGrid,
+            type: Layers.DENSE,
+            id: this.id,
+        }
+    }
+
+
     draw(pos: Position, color: Color): void {
-        const index = pos.y*this.width*4 + pos.x;
+        const index = (pos.y * this.width + pos.x) * 4;
         this.colorGrid[index] = color.r;
         this.colorGrid[index + 1] = color.g;
         this.colorGrid[index + 2] = color.b;
@@ -41,7 +62,11 @@ export class DenseLayer implements Layer, Drawable, Erasable {
         };
     }
 
-    getImage() {
+    getId(): string {
+        return this.id;
+    }
+
+    getBitmap() {
         return this.colorGrid;
     }
 

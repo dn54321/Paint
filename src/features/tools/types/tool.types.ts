@@ -1,9 +1,9 @@
 import React from "react";
-import { CameraActionPayload, CameraActions } from "../../camera/types/camera-action.types";
+import { CameraActionPayload, DisplayActions } from "../../display/types/camera-action.types";
 import { ToolFormComponent } from "./tool-forms.types";
 
 export interface ToolAction {
-    eventName: CameraActions,
+    eventName: DisplayActions,
     actionName: string,
     action: (payload: CameraActionPayload) => void
 }

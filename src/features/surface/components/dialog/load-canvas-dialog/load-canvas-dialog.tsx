@@ -4,7 +4,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogHea
 import { Input } from "../../../../../components/ui/input";
 import { Label } from "../../../../../components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../../../components/ui/tabs";
-import { CreateSceneForm } from "../../forms/create-canvas-form/create-canvas-form.component";
+import { CreateSceneForm } from "../../forms/create-surface-form/create-surface-form.component";
 
 export interface CreateSceneFormSubmit {
     width: number,
@@ -50,7 +50,7 @@ export function LoadSceneDialog(props: LoadSceneDialogProps) {
                         </TabsList>
                         <TabsContent value="create-scene">
                             <CreateSceneForm 
-                                onPostSubmit={() => setLoadSceneDialogOpen(false)}
+                                onSubmit={() => setLoadSceneDialogOpen(false)}
                             />
                         </TabsContent>
                         <TabsContent value="import-scene">

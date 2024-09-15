@@ -1,4 +1,7 @@
-import type { Config } from "tailwindcss"
+import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
+
+
 
 const config = {
   darkMode: ["class"],
@@ -74,7 +77,13 @@ const config = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    plugin(function({ addVariant }) {
+      addVariant('not-first', '&:not(:first-child)'),
+      addVariant('not-last', '&:not(:last-child)')
+    })
+  ],
 } satisfies Config
 
 export default config;

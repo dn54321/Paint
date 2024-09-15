@@ -20,8 +20,8 @@ export function ToolWidget(props: ToolWidget) {
             <AccordionItem value="true">
                 <AccordionTrigger className="h6 ml-3 mr-2">
                     <div className="flex gap-3">
-                        {props.icon}
-                        <h1>{props.title}</h1>
+                        {/* {props.icon} */}
+                        <h1 className="text-sm">{props.title}</h1>
                     </div>
                 </AccordionTrigger>
                 <AccordionContent>

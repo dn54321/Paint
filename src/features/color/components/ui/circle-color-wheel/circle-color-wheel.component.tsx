@@ -1,10 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { useColorSquare } from "../../../hooks/color-components/use-color-square.hook";
 import { useHueRing } from "../../../hooks/color-components/use-hue-ring.hook";
-import { useColor } from "../../../hooks/use-color.hook";
+import { HsvaColor, HsvColor } from "colord";
 
-export function CircleColorWheel() {
+export interface CircleColorWheelProps {
+    color: HsvColor,
+    setColor: (color: HsvColor | HsvaColor) => void,
+}
+
+
+export function CircleColorWheel(props: Partial<CircleColorWheelProps>) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [color, setColor] = useState<HsvColor>({h: 180, s: 0, v: 0})
     const [width, setWidth] = useState<number>(-1);
 
     useEffect(() => {
@@ -22,9 +29,14 @@ export function CircleColorWheel() {
     }, []);
 
 
-    const {color, setColor} = useColor();
-    const {HueRingPointer, redrawHueRing, color: HueRingColor} = useHueRing(canvasRef, {color, setColor});
-    const {SquarePointer, redrawColorSquare} = useColorSquare(canvasRef, {color: HueRingColor, setColor});
+    const colorSettings = {
+        color,
+        setColor,
+        ...props
+    }
+
+    const {HueRingPointer, redrawHueRing} = useHueRing(canvasRef, colorSettings);
+    const {SquarePointer, redrawColorSquare} = useColorSquare(canvasRef, colorSettings);
     useEffect(() => {
         if (canvasRef.current) {
             redrawColorSquare();

@@ -1,40 +1,47 @@
 import { hsvaToHex } from '@uiw/color-convert';
+import { HsvaColor, HsvColor } from 'colord';
 import { Palette } from "lucide-react";
-import { useState } from "react";
 import { ToggleGroup, ToggleGroupItem } from "../../../../../components/ui/toggle-group";
 import { CircleColorWheel } from "../../../../color/components/ui/circle-color-wheel/circle-color-wheel.component";
+import { ColorState } from '../../../../color/types/color.type';
 import { ToolWidget } from "../../container/tool-widget/tool-widget.component";
 
-export function ColorPickerWidget() {
-    const [colorState, setColorState] = useState(0);
-    const [colorPalette, setColorPalette] = useState([
-        { h: 0, s: 0, v: 100, a: 1 },
-        { h: 0, s: 0, v: 100, a: 1 }
-    ]);
+export interface ColorPickerWidgetProps {
+    primaryColor: HsvaColor | HsvColor,
+    secondaryColor: HsvaColor | HsvColor,
+    colorState: ColorState
+    setColorState: (colorState: ColorState) => void,
+    setColor: (color: HsvaColor | HsvColor, colorState?: ColorState) => void
+}  
 
-    
+export function ColorPickerWidget(props: ColorPickerWidgetProps) { 
+    const color = props.colorState === ColorState.PRIMARY ? props.primaryColor : props.secondaryColor;
+
     return (
         <ToolWidget title="Color Picker" icon={<Palette/>} >
             <div className="w-full flex flex-col place-items-center relative gap-2">
                 <ToggleGroup  
                     type="single" 
                     className="flex gap-0"
-                    value={colorState.toString()} 
-                    onValueChange={v => v && setColorState(Number(v))}
+                    value={props.colorState} 
+                    onValueChange={v => v && props.setColorState(v)}
                 >
-                    <ToggleGroupItem value="0"
-                        onClick={() => setColorState(0)}
-                        style={{background: hsvaToHex(colorPalette[0])}}
+                    <ToggleGroupItem value={ColorState.PRIMARY}
+                        onClick={() => props.setColorState(ColorState.PRIMARY)}
+                        style={{background: hsvaToHex({a: 1, ...props.primaryColor})}}
                         className="w-12 h-4 border data-[state=on]:border-foreground rounded-sm"
                     />
-                    <ToggleGroupItem value="1"
-                        onClick={() => setColorState(1)}
-                        style={{background: hsvaToHex(colorPalette[1])}}
+                    <ToggleGroupItem value={ColorState.SECONDARY}
+                        onClick={() => props.setColorState(ColorState.SECONDARY)}
+                        style={{background: hsvaToHex({a: 1, ...props.secondaryColor})}}
                         className="w-12 h-4 border data-[state=on]:border-foreground rounded-sm"
                     />
                 </ToggleGroup>
 
-                <CircleColorWheel/>
+                <CircleColorWheel 
+                    color={color} 
+                    setColor={props.setColor}
+                />
 
             </div>
         </ToolWidget>

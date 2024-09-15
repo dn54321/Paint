@@ -1,29 +1,49 @@
 import { ZoomIn, ZoomOut } from "lucide-react";
 import useBoundStore from "../../../hooks/use-bound-store";
 import { MouseButtons } from "../../../types/mouse.types";
-import { CameraActionPayload, CameraActions } from "../../camera/types/camera-action.types";
+import { DisplayActions, MouseDisplayActionPayload } from "../../display/types/camera-action.types";
 import { ToolHookResponse, Tools } from "../types/tool.types";
 import { ToolFormComponent, ToolFormComponents } from "../types/tool-forms.types";
+import { fitBoundingBox } from "../../display/utils/camera.utils";
 
 export enum MagnifySubtool {
     ZOOM_IN = "zoom-in",
     ZOOM_OUT = "zoom-out"
 }
 
-function onClick(payload: CameraActionPayload, zoomLevel: number) {
-    const event = payload.event;
-    
-    if (event.button === MouseButtons.LEFT_CLICK) {
-        const camera = payload.camera; 
-        if (!camera.isReady()) {
-            return;
-        }
+export interface MagnifyToolSettings {
+    magnification: number
+}
 
-        const newZoom = camera.getZoom() + zoomLevel;
-        if (0 < newZoom && newZoom <= 16) {
-            camera.zoomCamera(zoomLevel, {x: event.offsetX, y: event.offsetY});
-        }
+function onClick({scene, event, viewportRef}: MouseDisplayActionPayload, zoomLevel: number) {
+    const scenePadding = scene.getPaddingDimensions();
+    const sceneZoom = scene.getZoom();
+    const newZoom = sceneZoom + zoomLevel;
+    
+    if (event.button != MouseButtons.LEFT_CLICK || !viewportRef.current) {
+        return;
     }
+
+    if ((newZoom < 0 && newZoom > 16)) {
+        return;
+    }
+
+    const viewPortDimensions = {width: viewportRef.current.clientWidth, height: viewportRef.current.clientHeight };
+    const boardDimensions = fitBoundingBox(scene.getSurface().getDimensions(), viewPortDimensions);
+    const zoomedBoardDimension = {width: boardDimensions.width*sceneZoom, height: boardDimensions.height*sceneZoom};
+    const newZoomedBoardDimension = {width: boardDimensions.width*newZoom, height: boardDimensions.height*newZoom};
+    const newDisplayDimensions = {
+        width: newZoomedBoardDimension.width + scenePadding.width*2, 
+        height: newZoomedBoardDimension.height + scenePadding.width*2
+    };
+
+    const boardPixelPecentageX = (Number(event.offsetX) - scenePadding.width) / (zoomedBoardDimension.width);
+    const boardPixelPercentageY = (Number(event.offsetY) - scenePadding.height) / (zoomedBoardDimension.height);
+    const scrollX = (scenePadding.width + boardPixelPecentageX*newZoomedBoardDimension.width) / newDisplayDimensions.width;
+    const scrollY = (scenePadding.height + boardPixelPercentageY*newZoomedBoardDimension.height) / newDisplayDimensions.height;
+
+    scene.setZoom(newZoom);
+    scene.setScrollPositionPercentage({x: scrollX, y: scrollY});
 }
 
 export function useMagnifyTool(): ToolHookResponse<MagnifySubtool> {
@@ -34,9 +54,9 @@ export function useMagnifyTool(): ToolHookResponse<MagnifySubtool> {
     const toolPointer = magnifyState.activeSubtool;
 
     const actions = [{
-        eventName: CameraActions.ON_MOUSE_UP,
+        eventName: DisplayActions.ON_MOUSE_UP,
         actionName: "TOOL.MAGNIFY.ZOOM",
-        action: (payload: CameraActionPayload) => {
+        action: (payload: MouseDisplayActionPayload) => {
             switch (activeSubtool) {
                 case MagnifySubtool.ZOOM_IN: return onClick(payload, magnifyState.settings.zoomOffset/100);
                 case MagnifySubtool.ZOOM_OUT: return onClick(payload, -magnifyState.settings.zoomOffset/100);

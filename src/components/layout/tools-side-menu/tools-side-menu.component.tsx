@@ -9,29 +9,31 @@ import { useTool } from '../../../features/tools/hooks/use-tool.hook';
 import { Tools } from '../../../features/tools/types/tool.types';
 import { ToolOptionsWidget } from '../../../features/tools/components/widgets/tool-options-widget/tool-options-widget.component';
 import { Resizable } from 're-resizable';
+import { useColor } from '../../../features/color/hooks/use-color.hook';
 
 export default function ToolsSideMenu() {
     const {activeTool, setActiveTool, settingsTemplate, toolSettings, setToolSetting} = useTool();
+    const {primaryColor, secondaryColor, colorState, setColor, setColorstate } = useColor();
     const tools = [
         {
             name: Tools.HAND,
-            icon: <Hand />
+            icon: <Hand size={24} strokeWidth={1.25} />
         },
         {
             name: Tools.MAGNIFY,
-            icon: <Search  />
+            icon: <Search size={24} strokeWidth={1.25} />
         },
         {
             name: Tools.BRUSH,
-            icon: <Brush/>
+            icon: <Brush size={24} strokeWidth={1.25} />
         },
         {
             name: Tools.ERASER,
-            icon: <Eraser/>
+            icon: <Eraser size={24} strokeWidth={1.25} />
         },
         {
             name: Tools.SELECT,
-            icon: <BoxSelect/>
+            icon: <BoxSelect size={24} strokeWidth={1.25} />
         }
     ]
 
@@ -56,6 +58,7 @@ export default function ToolsSideMenu() {
                                         <ToggleGroupItem 
                                             value={activeTool.name} 
                                             aria-label={activeTool.name}   
+                                            size="sm"
                                         >
                                             {activeTool.icon}
                                         </ToggleGroupItem>
@@ -86,7 +89,13 @@ export default function ToolsSideMenu() {
                         toolSettings={toolSettings}
                         setToolSetting={setToolSetting}
                     />
-                    <ColorPickerWidget/>
+                    <ColorPickerWidget 
+                        primaryColor={primaryColor} 
+                        secondaryColor={secondaryColor}
+                        setColorState={setColorstate}
+                        setColor={setColor}
+                        colorState={colorState}
+                    />
                     <BrushSizeWidget/>
                 </Resizable>
         </aside>

@@ -16,10 +16,12 @@ function drawHueRing(
 ) {
     if (!canvasRef.current) {
         throw new Error("Canvas ref has not been properly initialised");
+        return;
     }
 
     if (canvasRef.current.scrollWidth != canvasRef.current.scrollHeight) {
         console.log("Canvas must be a perfect square");
+        return;
     }
 
     const ctx = canvasRef.current.getContext("2d");
@@ -80,7 +82,6 @@ function setHueByMousePos(
     const canvasDims = {width: canvasRef.current.clientWidth, height: canvasRef.current.clientHeight};
     const center = {x: canvasDims.width/2, y: canvasDims.height/2};
     const rads = Math.atan2(-(mousePos.y - center.y), mousePos.x - center.x);
-    console.log(rads);
     options.setColor({...options.color, h: (360 + rads*180/Math.PI) % 360});
 }
 
@@ -153,7 +154,7 @@ export function useHueRing(canvasRef: MutableRefObject<HTMLCanvasElement | null>
             if (options?.color === colorRef.current) {
                 return;
             }
-            console.log("Persisting color " + JSON.stringify(colorRef.current));
+            console.log("Persisting Hue ring color: " + JSON.stringify(colorRef.current));
             options?.setColor && options.setColor(colorRef.current);
         }
 

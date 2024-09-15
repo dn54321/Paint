@@ -1,5 +1,5 @@
 import useBoundStore from "../../../hooks/use-bound-store";
-import { CameraActionSubscriber } from "../../camera/services/camera/camera-action-subscriber.service";
+import { CameraActionSubscriber } from "../../display/services/camera/camera-action-subscriber.service";
 import { ToolHookResponse, Tools } from "../types/tool.types";
 import { useBrushTool } from "./use-brush-tool.hook";
 import { useHandTool } from "./use-hand-tool.hook";

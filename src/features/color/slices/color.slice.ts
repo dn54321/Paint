@@ -1,19 +1,25 @@
 import { StateCreator } from "zustand";
 import { BoundStore } from "../../../hooks/use-bound-store";
-import { HsvColor } from "colord";
+import { HsvaColor, HsvColor } from "colord";
+import { ColorState } from "../types/color.type";
 
 export interface ColorSliceState {
-    color: HsvColor
+    primaryColor: HsvaColor,
+    secondaryColor: HsvaColor,
+    colorState: ColorState
 }
 
 export interface ColorSliceActions {
-    setColor: (color: HsvColor) => void
+    setColor: (color: HsvaColor, colorState: ColorState) => void,
+    setColorState: (colorState: ColorState) => void, 
 }
 
 export type ColorSlice = ColorSliceState & ColorSliceActions;
 
 export const initialColorState: ColorSliceState = {
-    color: {h: 180, s: 0, v: 0},
+    primaryColor: {h: 180, s: 100, v: 100, a: 1},
+    secondaryColor: {h: 180, s: 0, v: 0, a: 1},
+    colorState: ColorState.PRIMARY
 }
 
 export const createColorSlice: StateCreator<
@@ -23,5 +29,6 @@ export const createColorSlice: StateCreator<
     ColorSlice
 > = (set) => ({
     ...initialColorState,
-    setColor: (color: HsvColor) => set(() => ({ color }))
+    setColor: (color: HsvColor, colorState: ColorState) => set(() => ({ [colorState]: color })),
+    setColorState: (colorState: ColorState) => set(() => ({colorState: colorState}))
 });
